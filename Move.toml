@@ -1,0 +1,11 @@
+[package]
+name = "inferenco_games"
+version = "1.0.0"
+
+[addresses]
+inferenco = "_"
+
+[dependencies.CedraFramework]
+git = "https://github.com/cedra-labs/cedra-framework.git"
+rev = "mainnet"
+subdir = "cedra-framework"

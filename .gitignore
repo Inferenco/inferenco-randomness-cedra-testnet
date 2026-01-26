@@ -1,0 +1,17 @@
+# Move build output
+build/
+.move/
+
+# Configs containing secrets
+.aptos/
+.cedra/
+config.yaml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
