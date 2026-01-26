@@ -68,14 +68,6 @@ module inferenco::game_tests {
          
          let admin_addr = signer::address_of(admin);
 
-         // Helper to set up pool (since there's no explicit init function in example, 
-         // but create_random_match checks for it, we might need to init it via create_random_match first 
-         // OR check logic: create_random_match initializes if not exists.
-         
-         // In game_examples: 
-         // create_random_match(admin) -> inits if not exists
-         // join_matchmaking(player, pool_owner) -> returns if no pool
-         
          // 1. Admin inits pool
          game_examples::create_random_match(admin);
          
@@ -85,5 +77,31 @@ module inferenco::game_tests {
          
          // 3. Create match
          game_examples::create_random_match(admin);
+    }
+
+    #[test(player = @0x123, framework = @0x1)]
+    fun test_map_generation(player: &signer, framework: &signer) {
+        timestamp::set_time_has_started_for_testing(framework);
+        random::initialize(player);
+        
+        game_examples::generate_map(player, 10, 10);
+    }
+
+    #[test(admin = @inferenco, player1 = @0x123, player2 = @0x456, framework = @0x1)]
+    fun test_lottery(admin: &signer, player1: &signer, player2: &signer, framework: &signer) {
+        timestamp::set_time_has_started_for_testing(framework);
+        random::initialize(admin);
+        
+        let admin_addr = signer::address_of(admin);
+        
+        // 1. Init
+        game_examples::init_lottery(admin, 100);
+        
+        // 2. Buy tickets
+        game_examples::buy_ticket(player1, admin_addr);
+        game_examples::buy_ticket(player2, admin_addr);
+        
+        // 3. Draw winner
+        game_examples::draw_winner(admin);
     }
 }

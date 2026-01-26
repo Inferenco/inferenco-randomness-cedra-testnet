@@ -495,4 +495,145 @@ module inferenco::game_examples {
             treasure_quality,
         }
     }
+
+    // ========================================================================
+    // EXAMPLE 8: Procedural Map Generation (2D Grid)
+    // ========================================================================
+
+    const TERRAIN_WATER: u8 = 0;
+    const TERRAIN_LAND: u8 = 1;
+    const TERRAIN_MOUNTAIN: u8 = 2;
+    const TERRAIN_FOREST: u8 = 3;
+
+    struct MapGrid has key {
+        width: u64,
+        height: u64,
+        grid: vector<vector<u8>>,
+    }
+
+    #[event]
+    struct MapGenerated has drop, store {
+        player: address,
+        width: u64,
+        height: u64,
+    }
+
+    public entry fun generate_map(player: &signer, width: u64, height: u64) acquires MapGrid {
+        let player_addr = signer::address_of(player);
+        let grid = vector::empty<vector<u8>>();
+        
+        let y = 0;
+        while (y < height) {
+            let row = vector::empty<u8>();
+            let x = 0;
+            while (x < width) {
+                // Simple weighted terrain generation
+                // Water: 30%, Land: 40%, Forest: 20%, Mountain: 10%
+                let weights = vector::empty<u64>();
+                vector::push_back(&mut weights, 30);
+                vector::push_back(&mut weights, 40);
+                vector::push_back(&mut weights, 10);
+                vector::push_back(&mut weights, 20);
+
+                // Note: Index mapping must match constants
+                // 0->Water, 1->Land, 2->Mountain, 3->Forest
+                // We pushed weights in order: Water, Land, Mountain, Forest
+                
+                let terrain_idx = random::weighted_choice(player_addr, &weights);
+                vector::push_back(&mut row, (terrain_idx as u8));
+                
+                x = x + 1;
+            };
+            vector::push_back(&mut grid, row);
+            y = y + 1;
+        };
+        
+        if (exists<MapGrid>(player_addr)) {
+            let map = borrow_global_mut<MapGrid>(player_addr);
+            map.width = width;
+            map.height = height;
+            map.grid = grid;
+        } else {
+            move_to(player, MapGrid {
+                width,
+                height,
+                grid,
+            });
+        };
+
+        event::emit(MapGenerated {
+            player: player_addr,
+            width,
+            height,
+        });
+    }
+
+    // ========================================================================
+    // EXAMPLE 9: Lottery System
+    // ========================================================================
+
+    struct Lottery has key {
+        tickets: vector<address>,
+        is_active: bool,
+        ticket_price: u64,
+    }
+
+    #[event]
+    struct LotteryWinner has drop, store {
+        winner: address,
+        prize_pool: u64,
+        total_participants: u64,
+    }
+
+    public entry fun init_lottery(admin: &signer, ticket_price: u64) {
+        let admin_addr = signer::address_of(admin);
+        if (!exists<Lottery>(admin_addr)) {
+            move_to(admin, Lottery {
+                tickets: vector::empty(),
+                is_active: true,
+                ticket_price,
+            });
+        };
+    }
+
+    public entry fun buy_ticket(player: &signer, lottery_owner: address) acquires Lottery {
+        let player_addr = signer::address_of(player);
+        assert!(exists<Lottery>(lottery_owner), 0);
+        
+        let lottery = borrow_global_mut<Lottery>(lottery_owner);
+        assert!(lottery.is_active, 1);
+        
+        // In a real app, we would charge coins here
+        vector::push_back(&mut lottery.tickets, player_addr);
+    }
+
+    public entry fun draw_winner(admin: &signer) acquires Lottery {
+        let admin_addr = signer::address_of(admin);
+        let lottery = borrow_global_mut<Lottery>(admin_addr);
+        
+        assert!(lottery.is_active, 1);
+        let num_tickets = vector::length(&lottery.tickets);
+        
+        if (num_tickets == 0) {
+            lottery.is_active = false;
+            return
+        };
+        
+        // Select random index
+        let winner_idx = random::u64_range(admin_addr, 0, num_tickets);
+        let winner = *vector::borrow(&lottery.tickets, winner_idx);
+        
+        // Calculate prize (mock)
+        let prize = num_tickets * lottery.ticket_price;
+        
+        event::emit(LotteryWinner {
+            winner,
+            prize_pool: prize,
+            total_participants: num_tickets,
+        });
+        
+        // Reset for next round
+        lottery.tickets = vector::empty();
+        lottery.is_active = true; // or false to end
+    }
 }

@@ -79,4 +79,11 @@ cedra move test --named-addresses inferenco=0x1
 
 ## Verification
 
-Check the deployment on the [Cedra Explorer](https://cedrascan.com) (or testnet equivalent) by searching for your account address. You should see the requested modules under the "Modules" tab.
+Check the deployment on the [Cedra Explorer](https://cedrascan.com) (or testnet equivalent) by searching for your account address. 
+## Deployed Addresses (Testnet)
+
+| Contract | Address | Transaction |
+|----------|---------|-------------|
+| **Inferenco Games** | `0xffc8b7e8ba733db4e66a992570a9531e80b92b4303cca0bb93f2fba987def403` | [`0xaa9d...`](https://cedrascan.com/txn/0xaa9d5d306891cbb0e525fe1e53f24284405f15480ea5ee508840b42609686d55?network=testnet) |
+| **Initialization** | N/A | [`0xf882...`](https://cedrascan.com/txn/0xf882cd20bcd38217b69686f976bfec63ed3f94c9ccc10ffea877a0f114481c9a?network=testnet) |
+
