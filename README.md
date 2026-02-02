@@ -3,43 +3,50 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Network: Cedra Testnet](https://img.shields.io/badge/Network-Cedra_Testnet-blue)](https://cedrascan.com)
 [![Language: Move](https://img.shields.io/badge/Language-Move-green)](https://move-language.github.io/move/)
-[![Status: Released](https://img.shields.io/badge/Status-Released-success)]()
 
-A custom randomness module built for the Cedra Network, designed to provide on-chain pseudorandom number generation to support game prototyping and development on testnet.
+A custom randomness module for the Cedra Network that provides a drop-in replacement for `cedra_framework::randomness` when native VRF is unavailable.
 
-> **⚠️ Security Note**: This module is intended for **testnet and low-stakes usage only**. It utilizes on-chain entropy sources which are verifiable but ultimately predictable by validators. Do not use for high-value financial applications.
+> **Security Note**: This module is intended for **testnet and low-stakes usage only**. It uses on-chain entropy sources which are predictable by validators.
 
-## 📚 Documentation
+## Documentation
 
-- **[Deployment Guide](DEPLOYMENT_GUIDE.md)**: Steps to compile, test, and publish to Cedra Testnet.
-- **[Developer Documentation](DOCUMENTATION.md)**: API reference, verification, and integration usage.
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)**: Steps to compile, test, and publish.
+- **[Developer Documentation](DOCUMENTATION.md)**: API reference and integration guide.
 
-## 🚀 Quick Start
-
-### Installation
-
-Clone the repository and install dependencies (Cedra CLI required).
+## Quick Start
 
 ```bash
 git clone https://github.com/Inferenco/inferenco-randomness-cedra-testnet.git
 cd inferenco-randomness-cedra-testnet
-cedra init --profile testnet --network testnet
-```
-
-### Run Tests
-
-Verify the contract logic:
-
-```bash
 cedra move test --named-addresses inferenco=0x1
 ```
 
-## 🎮 Features
+## Usage
 
-- **Integer Generation**: u8, u64, u256 support.
-- **Game Helpers**: Dice rolls, coin flips, weighted choice, deck shuffling.
-- **Example Games**: Includes implementations for Dice, Card, PvP, and Loot Box mechanics.
+```move
+use inferenco::randomness;
+
+// Get 32 random bytes
+let random_bytes = randomness::bytes(32);
+
+// Random u64
+let num = randomness::u64_integer();
+
+// Random in range [0, 100)
+let pct = randomness::u64_range(0, 100);
+
+// Dice roll (1-6)
+let roll = randomness::dice_roll(6);
+```
+
+## Features
+
+- Drop-in replacement API matching `cedra_framework::randomness`
+- Integer generation: u8, u16, u32, u64, u128, u256
+- Range functions for all integer types
+- Utility functions: permutation, shuffle, pick, weighted_choice
+- Game helpers: dice_roll, coin_flip, boolean
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT License](LICENSE)

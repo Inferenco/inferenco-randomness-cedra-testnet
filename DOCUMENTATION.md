@@ -2,54 +2,55 @@
 
 ## Introduction
 
-The `inferenco::random` module provides pseudorandom number generation (PRNG) for the Cedra network. It is designed for game prototypes, non-financial randomization, and educational purposes.
+The `inferenco::randomness` module provides pseudorandom number generation (PRNG) for the Cedra network. It is designed as a drop-in replacement for `cedra_framework::randomness` when native VRF is unavailable.
 
-> **⚠️ Security Warning**: This module uses on-chain entropy (timestamp, transaction hash). It is predictable by validators and should **NOT** be used for high-stakes financial applications.
+> **Security Warning**: This module uses on-chain entropy (timestamp, transaction hash). It is predictable by validators and should **NOT** be used for high-stakes financial applications.
 
 ## Usage Guidelines & Security
 
 ### When to Use This Module
-*   ✅ **Low-stakes games and testing**: Prototyping game mechanics where perfect randomness isn't critical.
-*   ✅ **Non-financial randomness**: Loot drops, matchmaking brackets, cosmetic generation.
-*   ✅ **Development and prototyping**: Building and testing dApps on testnet before mainnet VRF is live.
-*   ✅ **Educational purposes**: Learning Move and randomness concepts.
+*   Low-stakes games and testing
+*   Non-financial randomness (loot drops, matchmaking, cosmetics)
+*   Development and prototyping on testnet
+*   Educational purposes
 
 ### When NOT to Use This Module
-*   ❌ **High-value financial applications**: Lotteries, casinos, or defi protocols with significant funds.
-*   ❌ **Large-sum gambling/betting**: Where minor predictability could lead to major loss of funds.
-*   ❌ **Critical randomness**: Any system where the integrity of the randomness is the sole security guarantee.
+*   High-value financial applications
+*   Lotteries, casinos, or defi protocols with significant funds
+*   Any system where randomness integrity is the sole security guarantee
 
 ## Integration
 
 ### 1. Add Dependency
 
-Add the package to your `Move.toml`. If you deployed it yourself, reference it by local path or git (if hosted). For development, you can include the source files directly.
+Reference the package in your `Move.toml`:
 
 ```toml
 [dependencies]
 CedraFramework = { git = "https://github.com/cedra-labs/cedra-framework.git", rev = "mainnet" }
-# InferencoGames = { local = "../inferenco-randomness" } 
+# InferencoRandomness = { local = "../inferenco-randomness" }
 ```
 
 ### 2. Basic Usage
 
-Import the module and use the helper functions.
+The API matches native `cedra_framework::randomness` - no caller address needed:
 
 ```move
 module my_game::dice {
-    use inferenco::random;
-    use std::signer;
+    use inferenco::randomness;
 
-    entry fun roll(player: &signer) {
-        let player_addr = signer::address_of(player);
+    entry fun roll(_player: &signer) {
+        // Get 32 random bytes
+        let random_bytes = randomness::bytes(32);
 
-        // 1. Initialize (idempotent, harmless if already done)
-        if (!random::is_initialized(player_addr)) {
-            random::initialize(player);
-        };
+        // Roll a d6
+        let result = randomness::dice_roll(6);
 
-        // 2. Generate Number (1 to 6)
-        let result = random::dice_roll(player_addr, 6);
+        // Random u64
+        let random_num = randomness::u64_integer();
+
+        // Random in range [1, 100)
+        let percentage = randomness::u64_range(1, 100);
     }
 }
 ```
@@ -57,48 +58,60 @@ module my_game::dice {
 ## API Reference
 
 ### Initialization
-*   `initialize(account: &signer)`: Sets up the `RandomnessCounter` resource for the account. Required before calling any random functions.
+*   `initialize(account: &signer)`: One-time setup. Must be called by the module deployer (`@inferenco`).
+
+### Bytes
+*   `bytes(n: u64): vector<u8>`: Returns `n` random bytes.
 
 ### Integer Generation
-*   `u8_integer(caller: address): u8`
-*   `u64_integer(caller: address): u64`
-*   `u256_integer(caller: address): u256`
-    *Returns a random integer across the full range of the type.*
+*   `u8_integer(): u8`
+*   `u16_integer(): u16`
+*   `u32_integer(): u32`
+*   `u64_integer(): u64`
+*   `u128_integer(): u128`
+*   `u256_integer(): u256`
 
 ### Ranges
-*   `u64_range(caller: address, min: u64, max: u64): u64`
-    *Returns a value where `min <= value < max`.*
+*   `u8_range(min: u8, max: u8): u8`
+*   `u16_range(min: u16, max: u16): u16`
+*   `u32_range(min: u32, max: u32): u32`
+*   `u64_range(min: u64, max: u64): u64`
+*   `u128_range(min: u128, max: u128): u128`
+*   `u256_range(min: u256, max: u256): u256`
+
+Returns a value where `min <= value < max`.
 
 ### Game Helpers
-*   `dice_roll(caller: address, sides: u64): u64`
-    *Returns `1` to `sides` (inclusive).*
-*   `coin_flip(caller: address): bool`
-    *Returns `true` or `false`.*
-*   `boolean(caller: address, probability: u8): bool`
-    *Returns true with `probability` percent chance (0-100).*
-*   `weighted_choice(caller: address, weights: &vector<u64>): u64`
-    *Returns an index from `weights` based on their relative values.*
+*   `dice_roll(sides: u64): u64` - Returns `1` to `sides` (inclusive).
+*   `dice_roll_sum(num_dice: u64, sides: u64): u64` - Sum of multiple dice.
+*   `coin_flip(): bool` - Returns `true` or `false`.
+*   `boolean(probability: u8): bool` - Returns true with `probability` percent chance (0-100).
+*   `critical_hit(crit_chance_percent: u8): bool` - Alias for boolean.
+*   `weighted_choice(weights: &vector<u64>): u64` - Returns weighted random index.
 
 ### Utilities
-*   `shuffle<T>(caller: address, vec: &mut vector<T>)`
-    *Shuffles a vector in-place.*
-*   `pick<T>(caller: address, vec: &vector<T>): T`
-    *Returns a random element from the vector.*
+*   `permutation(n: u64): vector<u64>` - Random permutation of [0, n).
+*   `shuffle<T: drop>(vec: &mut vector<T>)` - Shuffles a vector in-place.
+*   `pick<T: copy>(vec: &vector<T>): T` - Returns a random element.
+
+### View Functions
+*   `is_initialized(): bool` - Check if module is initialized.
+*   `get_counter(): u64` - Get current counter value.
 
 ## Migration to Native Randomness
 
-When Cedra releases native VRF support, you should migrate:
+When Cedra releases native VRF support:
 
-1.  Replace `inferenco::random` imports with `cedra_framework::randomness`.
-2.  Remove `initialize` calls.
-3.  Remove the `caller` address argument from function calls (native randomness checks the sender automatically or doesn't require it).
+1.  Replace `use inferenco::randomness` with `use cedra_framework::randomness`.
+2.  Remove the `initialize` call (native randomness doesn't require it).
+3.  The function signatures are identical - no other changes needed.
 
 ## Troubleshooting
 
 **Error: `E_NOT_INITIALIZED` (code 2)**
-*   **Cause**: You called a random function without initializing the account first.
-*   **Fix**: Call `random::initialize(signer)` or ensure your entry function handles auto-initialization.
+*   **Cause**: Module not initialized.
+*   **Fix**: The module deployer must call `randomness::initialize(signer)` once after deployment.
 
-**Obvious Patterns / Repetition**
-*   **Cause**: Calling random functions in a loop within the *same* transaction without updating the counter (internal implementation handles this, but verify `RandomnessCounter` exists).
-*   **Fix**: The module automatically increments a counter per call. If you see repetition, ensure you are not simulating or reverting state inappropriately.
+**Error: `E_NOT_AUTHORIZED` (code 4)**
+*   **Cause**: Non-deployer tried to call initialize.
+*   **Fix**: Only the account at `@inferenco` can initialize.
